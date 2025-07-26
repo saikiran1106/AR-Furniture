@@ -1,31 +1,38 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  FaShareAlt,
-  FaShoppingCart,
-  FaArrowLeft,
-  FaTimes,
-} from "react-icons/fa";
+import { FaShareAlt, FaShoppingCart, FaTimes } from "react-icons/fa";
 import { MdViewInAr } from "react-icons/md";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
+
+// Type-cast model-viewer to avoid TypeScript JSX error
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const ModelViewer = "model-viewer" as any;
 
 const TEXTURES = [
   {
     name: "Blue",
     model: "/sample-furniture-blue.glb",
+    iosmodel: "/sample-furniture-blue.usdz",
     img: "https://www.jagdishstore.com/cdn/shop/products/1010133230700104-008_800x.jpg?v=1746022203",
     price: 300,
   },
   {
     name: "Red",
     model: "/sample-furniture-red.glb",
+    iosmodel: "/sample-furniture-red.usdz",
     img: "https://www.jagdishstore.com/cdn/shop/products/1010133220400211-002_800x.jpg?v=1746022983",
     price: 400,
   },
 ];
 
-function isMobile() {
+// Type for model-viewer element
+interface ModelViewerElement extends HTMLElement {
+  activateAR: () => void;
+}
+
+function isMobile(): boolean {
   if (typeof window === "undefined") return false;
   return /Mobi|Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop/i.test(
     navigator.userAgent
@@ -37,7 +44,7 @@ export default function FurnitureViewer({
 }: {
   productName?: string;
 }) {
-  const viewerRef = useRef<any>(null);
+  const viewerRef = useRef<ModelViewerElement | null>(null);
   const [selectedTexture, setSelectedTexture] = useState(TEXTURES[0]);
   const [showQR, setShowQR] = useState(false);
   const [fade, setFade] = useState(false);
@@ -47,8 +54,7 @@ export default function FurnitureViewer({
     import("@google/model-viewer");
   }, []);
 
-  // Smooth fade transition on model switch
-  const handleTextureChange = (texture: (typeof TEXTURES)[0]) => {
+  const handleTextureChange = (texture: (typeof TEXTURES)[number]) => {
     if (texture.model === selectedTexture.model) return;
     setFade(true);
     setTimeout(() => {
@@ -59,9 +65,7 @@ export default function FurnitureViewer({
 
   const handleAR = () => {
     if (isMobile()) {
-      if (viewerRef.current) {
-        (viewerRef.current as any).activateAR();
-      }
+      viewerRef.current?.activateAR();
     } else {
       setShowQR(true);
     }
@@ -79,14 +83,13 @@ export default function FurnitureViewer({
     }
   };
 
-  // QR code image URL (using goqr.me API)
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
-    window?.location?.href || ""
-  )}`;
-
   const handleCart = () => {
     router.push(`/payment?texture=${selectedTexture.name.toLowerCase()}`);
   };
+
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+    typeof window !== "undefined" ? window.location.href : ""
+  )}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-[#181818] text-white items-center relative">
@@ -103,9 +106,11 @@ export default function FurnitureViewer({
             <div className="text-black font-bold text-xl mb-2">
               Scan for AR Experience
             </div>
-            <img
+            <Image
               src={qrUrl}
               alt="QR code for AR"
+              width={160}
+              height={160}
               className="w-40 h-40 rounded-lg border border-gray-200 shadow"
             />
             <div className="text-gray-700 text-base text-center font-medium">
@@ -115,20 +120,17 @@ export default function FurnitureViewer({
           </div>
         </div>
       )}
-      <div className="absolute left-4 top-4 z-10">
-        <button
-          className="p-2 rounded-full bg-[#222] hover:bg-[#333]"
-          onClick={() => window.location.reload()}>
-          <FaArrowLeft size={24} />
-        </button>
-      </div>
-      <div
-        className="mt-8 mb-2 text-3xl font-extrabold text-[#b32a00] tracking-wide"
-        style={{ fontStyle: "italic" }}>
-        DANUBE HOME
-      </div>
-      {/* Product Name above model viewer */}
+
+      <Image
+        src="/danubahome.svg"
+        alt="Danube Home Logo"
+        width={180}
+        height={100}
+        className="w-[380px] h-auto mt-6 mb-5"
+      />
+
       <div className="text-2xl font-medium mb-4 text-center">{productName}</div>
+
       <div className="w-full flex-1 flex items-center justify-center relative">
         <div
           className={`transition-opacity duration-300 ${
@@ -141,9 +143,10 @@ export default function FurnitureViewer({
             background: "#222",
             borderRadius: 16,
           }}>
-          <model-viewer
+          <ModelViewer
             ref={viewerRef}
             src={selectedTexture.model}
+            ios-src={selectedTexture.iosmodel}
             ar
             ar-modes="webxr scene-viewer quick-look"
             camera-controls
@@ -157,13 +160,13 @@ export default function FurnitureViewer({
             }}
             exposure="1"
             shadow-intensity="1"
-            alt={productName}
-            ios-src={selectedTexture.model}>
+            alt={productName}>
             <button slot="ar-button" className="hidden" />
-          </model-viewer>
+          </ModelViewer>
         </div>
       </div>
-      {/* Texture Picker below model viewer */}
+
+      {/* Texture Picker */}
       <div className="flex gap-6 justify-center mt-6 mb-6">
         {TEXTURES.map((texture) => (
           <button
@@ -175,14 +178,18 @@ export default function FurnitureViewer({
             }`}
             onClick={() => handleTextureChange(texture)}
             aria-label={`Choose ${texture.name} texture`}>
-            <img
+            <Image
               src={texture.img}
               alt={texture.name}
+              width={64}
+              height={64}
               className="object-cover w-full h-full"
             />
           </button>
         ))}
       </div>
+
+      {/* Action Buttons */}
       <div className="flex justify-center gap-8 mt-8 mb-8 w-full">
         <button
           className="bg-white text-[#b32a00] rounded-full p-4 shadow-lg hover:bg-gray-100 transition"
@@ -198,8 +205,8 @@ export default function FurnitureViewer({
         </button>
         <button
           className="bg-white text-[#b32a00] rounded-full p-4 shadow-lg hover:bg-gray-100 transition"
-          aria-label="Buy"
-          onClick={handleCart}>
+          onClick={handleCart}
+          aria-label="Buy">
           <FaShoppingCart size={28} />
         </button>
       </div>

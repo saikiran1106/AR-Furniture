@@ -1,9 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { FaArrowLeft, FaLock } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-
+import Image from "next/image";
 const SOFAS: Record<string, { name: string; img: string; price: number }> = {
   blue: {
     name: "Blue Sofa",
@@ -17,7 +18,7 @@ const SOFAS: Record<string, { name: string; img: string; price: number }> = {
   },
 };
 
-export default function PaymentPage() {
+function PaymentContent() {
   const params = useSearchParams();
   const texture = params.get("texture") || "blue";
   const sofa = SOFAS[texture] || SOFAS.blue;
@@ -40,9 +41,11 @@ export default function PaymentPage() {
         <div className="flex flex-col md:flex-row gap-8">
           {/* Product summary */}
           <div className="flex-1 flex flex-col items-center md:items-start gap-4">
-            <img
+            <Image
               src={sofa.img}
               alt={sofa.name}
+              width={160}
+              height={128}
               className="w-40 h-32 object-cover rounded-lg border"
             />
             <div className="text-lg font-semibold text-gray-800">
@@ -116,5 +119,18 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+          Loading...
+        </div>
+      }>
+      <PaymentContent />
+    </Suspense>
   );
 }

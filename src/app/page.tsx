@@ -20,10 +20,5 @@ export default function Home() {
     return <LoadingScreen />;
   }
 
-  return (
-    <FurnitureViewer
-      modelUrl="/sample-furniture.glb"
-      productName="Modern Sofa Set"
-    />
-  );
+  return <FurnitureViewer productName="Modern Sofa Set" />;
 }
