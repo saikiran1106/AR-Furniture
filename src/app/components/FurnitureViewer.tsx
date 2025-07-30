@@ -22,7 +22,7 @@ const TEXTURES = [
     iosmodel: "/sample-furniture-blue.usdz",
     img: "https://www.jagdishstore.com/cdn/shop/products/1010133230700104-008_800x.jpg?v=1746022203",
     price: 300,
-    poster: "/sofa-blue-poster.png",
+    poster: "/sofa-blue-poster.webp",
   },
   {
     name: "Red",
@@ -30,7 +30,7 @@ const TEXTURES = [
     iosmodel: "/sample-furniture-red.usdz",
     img: "https://www.jagdishstore.com/cdn/shop/products/1010133220400211-002_800x.jpg?v=1746022983",
     price: 400,
-    poster: "/sofa-red-poster.png",
+    poster: "/sofa-red-poster.webp",
   },
 ];
 
@@ -63,11 +63,12 @@ export default function FurnitureViewer({
 
   const handleTextureChange = (texture: (typeof TEXTURES)[number]) => {
     if (texture.model === selectedTexture.model) return;
-    setFade(true);
-    setTimeout(() => {
-      setSelectedTexture(texture);
-      setFade(false);
-    }, 300);
+    // setFade(true);
+    // setTimeout(() => {
+    //   setSelectedTexture(texture);
+    //   setFade(false);
+    // }, 300);
+    setSelectedTexture(texture);
   };
 
   const handleAR = () => {

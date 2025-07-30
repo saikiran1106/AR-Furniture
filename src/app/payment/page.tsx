@@ -41,13 +41,13 @@ function PaymentContent() {
               alt="Danube Home Logo"
               width={100}
               height={32}
-              className="h-6 sm:h-8 w-auto"
+              className="h-6 sm:h-8 w-60 "
             />
           </div>
           {/* <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
             <FaLock size={12} />
             <span className="hidden sm:inline">Secure Checkout</span>
-            <span className="sm:hidden">Secure</span>
+            <span className="sm:hidden">Secure Checkout</span>
           </div> */}
         </div>
       </header>
