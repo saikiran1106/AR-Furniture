@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { FaShareAlt, FaShoppingCart, FaTimes } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaShareAlt,
+  FaShoppingCart,
+  FaTimes,
+} from "react-icons/fa";
 import { MdViewInAr } from "react-icons/md";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -17,6 +22,7 @@ const TEXTURES = [
     iosmodel: "/sample-furniture-blue.usdz",
     img: "https://www.jagdishstore.com/cdn/shop/products/1010133230700104-008_800x.jpg?v=1746022203",
     price: 300,
+    poster: "/sofa-blue-poster.png",
   },
   {
     name: "Red",
@@ -24,6 +30,7 @@ const TEXTURES = [
     iosmodel: "/sample-furniture-red.usdz",
     img: "https://www.jagdishstore.com/cdn/shop/products/1010133220400211-002_800x.jpg?v=1746022983",
     price: 400,
+    poster: "/sofa-red-poster.png",
   },
 ];
 
@@ -72,14 +79,43 @@ export default function FurnitureViewer({
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      await navigator.share({
-        title: productName,
-        url: window.location.href,
-      });
-    } else {
-      await navigator.clipboard.writeText(window.location.href);
-      alert("Link copied to clipboard!");
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: productName,
+          url: window.location.href,
+        });
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+        alert("Link copied to clipboard!");
+      } else {
+        // Fallback for browsers without clipboard API
+        const textArea = document.createElement("textarea");
+        textArea.value = window.location.href;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        try {
+          document.execCommand("copy");
+          alert("Link copied to clipboard!");
+        } catch (err) {
+          alert(
+            "Unable to copy link. Please copy manually: " + window.location.href
+          );
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
+    } catch (error) {
+      console.error("Error sharing:", error);
+      alert(
+        "Unable to share. Please copy the link manually: " +
+          window.location.href
+      );
     }
   };
 
@@ -92,18 +128,18 @@ export default function FurnitureViewer({
   )}`;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#181818] text-white items-center relative">
+    <div className="h-screen bg-[#181818] text-white relative">
       {/* QR Modal */}
       {showQR && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4 relative min-w-[300px] shadow-xl">
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 flex flex-col items-center gap-4 relative max-w-sm w-full shadow-xl">
             <button
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-800 text-2xl p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
               onClick={() => setShowQR(false)}
               aria-label="Close QR modal">
               <FaTimes />
             </button>
-            <div className="text-black font-bold text-xl mb-2">
+            <div className="text-black font-bold text-xl mb-2 text-center mt-8">
               Scan for AR Experience
             </div>
             <Image
@@ -113,7 +149,7 @@ export default function FurnitureViewer({
               height={160}
               className="w-40 h-40 rounded-lg border border-gray-200 shadow"
             />
-            <div className="text-gray-700 text-base text-center font-medium">
+            <div className="text-gray-700 text-sm text-center font-medium leading-relaxed">
               Scan this QR code with your mobile device to view the model in AR
               mode.
             </div>
@@ -121,94 +157,101 @@ export default function FurnitureViewer({
         </div>
       )}
 
-      <Image
-        src="/danubahome.svg"
-        alt="Danube Home Logo"
-        width={180}
-        height={100}
-        className="w-[380px] h-auto mt-6 mb-5"
-      />
+      {/* Fullscreen 3D Model as background */}
+      <ModelViewer
+        ref={viewerRef}
+        src={selectedTexture.model}
+        ios-src={selectedTexture.iosmodel}
+        poster={selectedTexture.poster}
+        ar
+        ar-modes="webxr scene-viewer quick-look"
+        camera-controls
+        auto-rotate
+        exposure="1"
+        shadow-intensity="1"
+        alt={productName}
+        className={`absolute inset-0 w-full h-full z-0 transition-opacity duration-300 ${
+          fade ? "opacity-0" : "opacity-100"
+        }`}>
+        <button slot="ar-button" className="hidden" />
+      </ModelViewer>
 
-      <div className="text-2xl font-medium mb-4 text-center">{productName}</div>
-
-      <div className="w-full flex-1 flex items-center justify-center relative">
-        <div
-          className={`transition-opacity duration-300 ${
-            fade ? "opacity-0" : "opacity-100"
-          }`}
-          style={{
-            width: "100%",
-            maxWidth: 400,
-            height: 400,
-            background: "#222",
-            borderRadius: 16,
-          }}>
-          <ModelViewer
-            ref={viewerRef}
-            src={selectedTexture.model}
-            ios-src={selectedTexture.iosmodel}
-            ar
-            ar-modes="webxr scene-viewer quick-look"
-            camera-controls
-            auto-rotate
-            style={{
-              width: "100%",
-              maxWidth: 400,
-              height: 400,
-              background: "#222",
-              borderRadius: 16,
-            }}
-            exposure="1"
-            shadow-intensity="1"
-            alt={productName}>
-            <button slot="ar-button" className="hidden" />
-          </ModelViewer>
-        </div>
-      </div>
-
-      {/* Texture Picker */}
-      <div className="flex gap-6 justify-center mt-6 mb-6">
-        {TEXTURES.map((texture) => (
-          <button
-            key={texture.name}
-            className={`rounded-lg border-2 transition-all duration-200 overflow-hidden w-16 h-16 ${
-              selectedTexture.model === texture.model
-                ? "border-[#b32a00] scale-110"
-                : "border-transparent"
-            }`}
-            onClick={() => handleTextureChange(texture)}
-            aria-label={`Choose ${texture.name} texture`}>
+      {/* UI Overlay */}
+      <div className="absolute inset-0 z-10 pointer-events-none">
+        {/* Top Section */}
+        <div className="absolute top-4 left-0 right-0 flex flex-col items-center w-full p-4 sm:p-6 pointer-events-auto">
+          <div className="relative w-full flex justify-center items-center">
+            <button
+              onClick={() => router.back()}
+              className="absolute left-0 p-2 rounded-full hover:bg-white/10 transition"
+              aria-label="Go back">
+              <FaArrowLeft size={20} />
+            </button>
             <Image
-              src={texture.img}
-              alt={texture.name}
-              width={64}
-              height={64}
-              className="object-cover w-full h-full"
+              src="/danubahome.svg"
+              alt="Danube Home Logo"
+              width={180}
+              height={100}
+              className="w-54 h-auto"
             />
-          </button>
-        ))}
-      </div>
+          </div>
+          <div className="text-lg mt-4 font-medium text-center pt-2 italic">
+            {productName}
+          </div>
+        </div>
 
-      {/* Action Buttons */}
-      <div className="flex justify-center gap-8 mt-8 mb-8 w-full">
-        <button
-          className="bg-white text-[#b32a00] rounded-full p-4 shadow-lg hover:bg-gray-100 transition"
-          onClick={handleShare}
-          aria-label="Share">
-          <FaShareAlt size={28} />
-        </button>
-        <button
-          className="bg-white text-[#b32a00] rounded-full p-6 shadow-lg border-4 border-[#b32a00] hover:bg-gray-100 transition"
-          onClick={handleAR}
-          aria-label="View in AR">
-          <MdViewInAr size={36} />
-        </button>
-        <button
-          className="bg-white text-[#b32a00] rounded-full p-4 shadow-lg hover:bg-gray-100 transition"
-          onClick={handleCart}
-          aria-label="Buy">
-          <FaShoppingCart size={28} />
-        </button>
+        {/* Bottom Section */}
+        <div className="absolute bottom-[15vh] sm:bottom-0 left-0 right-0 flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-4 pointer-events-auto">
+          {/* Texture Picker */}
+          <div className="flex mb-8 gap-4 justify-center">
+            {TEXTURES.map((texture) => (
+              <button
+                key={texture.name}
+                className={`rounded-full border-2 transition-all duration-200 overflow-hidden w-8 h-8 sm:w-10 sm:h-10 ${
+                  selectedTexture.model === texture.model
+                    ? "border-[#b32a00] scale-110"
+                    : "border-transparent hover:border-white/50"
+                }`}
+                onClick={() => handleTextureChange(texture)}
+                aria-label={`Choose ${texture.name} texture`}>
+                <Image
+                  src={texture.img}
+                  alt={texture.name}
+                  width={40}
+                  height={40}
+                  className="object-cover w-full h-full"
+                />
+              </button>
+            ))}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-center items-center gap-6 sm:gap-8">
+            {/* Cart Button */}
+            <button
+              className="bg-white/90 text-black rounded-full p-2 sm:p-4 shadow-lg hover:bg-white transition-transform duration-200 hover:scale-105"
+              onClick={handleCart}
+              aria-label="Buy">
+              <FaShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+
+            {/* AR Button */}
+            <button
+              className="bg-white text-black rounded-full p-3 sm:p-5 shadow-xl border-2 border-white hover:bg-white/90 transition-transform duration-200 hover:scale-105"
+              onClick={handleAR}
+              aria-label="View in AR">
+              <MdViewInAr className="w-6 h-6 sm:w-8 sm:h-8" />
+            </button>
+
+            {/* Share Button */}
+            <button
+              className="bg-white/90 text-black rounded-full p-2 sm:p-4 shadow-lg hover:bg-white transition-transform duration-200 hover:scale-105"
+              onClick={handleShare}
+              aria-label="Share">
+              <FaShareAlt className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
